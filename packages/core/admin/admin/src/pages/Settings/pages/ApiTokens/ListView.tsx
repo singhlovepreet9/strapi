@@ -86,7 +86,7 @@ export const ListView = () => {
     });
   });
 
-  const { data: apiTokens = [], isLoading, error } = useGetAPITokensQuery();
+  const { data: apiTokens = [], isLoading, error } = useGetAPITokensQuery({ kind: 'content-api' });
 
   React.useEffect(() => {
     if (error) {
@@ -155,17 +155,12 @@ export const ListView = () => {
               data-testid="create-api-token-button"
               startIcon={<Plus />}
               size="S"
-              onClick={() =>
-                trackUsage('willAddTokenFromList', {
-                  tokenType: API_TOKEN_TYPE,
-                })
-              }
+              onClick={() => trackUsage('willAddTokenFromList', { tokenType: API_TOKEN_TYPE })}
               to="/settings/api-tokens/create"
-              fullWidth
             >
               {formatMessage({
-                id: 'Settings.apiTokens.create',
-                defaultMessage: 'Create new API Token',
+                id: 'Settings.apiTokens.addNewToken',
+                defaultMessage: 'Add new API Token',
               })}
             </LinkButton>
           )
