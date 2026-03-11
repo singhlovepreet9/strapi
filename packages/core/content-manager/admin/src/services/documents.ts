@@ -257,8 +257,8 @@ const documentApi = contentManagerApi.injectEndpoints({
       }),
     }),
     /**
-     * Fetches documents via the existing findOne endpoint (same as edit view).
-     * Reuses the edit view's data structure for validation.
+     * Fetches multiple documents with full populate via the existing find API.
+     * Uses filters[documentId][$in] and _populate=deep for validation.
      */
     getDocumentsForValidation: builder.query<
       FindOne.Response['data'][],
@@ -269,26 +269,25 @@ const documentApi = contentManagerApi.injectEndpoints({
         params?: FindOne.Request['query'];
       }
     >({
-      queryFn: async (
-        { collectionType, model, documentIds, params },
-        _api,
-        _extraOpts,
-        baseQuery
-      ) => {
-        const results = await Promise.all(
-          documentIds.map(async (documentId) => {
-            const res = await baseQuery({
-              url: `/content-manager/${collectionType}/${model}/${documentId}`,
-              method: 'GET',
-              config: { params },
-            });
-            if (res.error) return null;
-            return (res.data as FindOne.Response)?.data ?? null;
-          })
-        );
-        const documents = results.filter((doc): doc is FindOne.Response['data'] => doc != null);
-        return { data: documents };
+      query: ({ collectionType, model, documentIds, params }) => {
+        const filters = documentIds.length > 0 ? { documentId: { $in: documentIds } } : undefined;
+        const queryParams = {
+          ...params,
+          filters,
+          status: 'draft',
+          _populate: 'deep',
+          page: 1,
+          pageSize: Math.max(documentIds.length, 1),
+        };
+        return {
+          url: `/content-manager/${collectionType}/${model}`,
+          method: 'GET',
+          config: {
+            params: stringify(queryParams, { encode: true }),
+          },
+        };
       },
+      transformResponse: (response: Find.Response) => response?.results ?? [],
       providesTags: (result, _error, { model }) =>
         result
           ? [

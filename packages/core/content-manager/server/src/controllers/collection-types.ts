@@ -254,18 +254,22 @@ export default {
       return ctx.forbidden();
     }
 
-    const permissionQuery = await permissionChecker.sanitizedQuery.read(query);
+    // _populate=deep: use full populate (e.g. for bulk validation)
+    const populateDeep = query._populate === 'deep';
+    const queryForSanitize = omit(['_populate'], query);
+
+    const permissionQuery = await permissionChecker.sanitizedQuery.read(queryForSanitize);
 
     const populate = await getService('populate-builder')(model)
       .populateFromQuery(permissionQuery)
-      .populateDeep(1)
-      .countRelations({ toOne: false, toMany: true })
+      .populateDeep(populateDeep ? Infinity : 1)
+      .countRelations(populateDeep ? {} : { toOne: false, toMany: true })
       .build();
 
     // "Modified" is a UI-only filter; not a real document status. Read and strip it
     // so we never pass it to validation or the document service.
     const publicationStatusFilter = query.publicationStatusFilter;
-    const queryForValidation = { ...query };
+    const queryForValidation = { ...queryForSanitize };
     delete queryForValidation.publicationStatusFilter;
 
     const { locale, status } = await getDocumentLocaleAndStatus(queryForValidation, model);
