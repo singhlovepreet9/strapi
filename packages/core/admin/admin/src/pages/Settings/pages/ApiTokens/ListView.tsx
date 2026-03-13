@@ -159,8 +159,8 @@ export const ListView = () => {
               to="/settings/api-tokens/create"
             >
               {formatMessage({
-                id: 'Settings.apiTokens.addNewToken',
-                defaultMessage: 'Add new API Token',
+                id: 'Settings.apiTokens.create',
+                defaultMessage: 'Create new API Token',
               })}
             </LinkButton>
           )

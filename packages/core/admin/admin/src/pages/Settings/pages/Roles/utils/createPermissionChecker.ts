@@ -4,7 +4,7 @@
  * to modify specific fields/actions during role and app token editing.
  */
 
-import { Permission as AuthPermission } from '../../../../../features/Auth';
+import type { Permission as AuthPermission } from '../../../../../features/Auth';
 
 /**
  * Creates a permission checker function for field-level permission validation.

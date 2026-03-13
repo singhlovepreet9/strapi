@@ -112,6 +112,7 @@ export const server: SetupServer = setupServer(
       return res(
         ctx.json({
           data: {
+            id: 1,
             email: 'michka@michka.fr',
             firstname: 'michoko',
             lastname: 'ronronscelestes',
@@ -633,6 +634,9 @@ export const server: SetupServer = setupServer(
           },
         })
       );
+    }),
+    rest.get('/admin/admin-tokens/:id/owner-permissions', (req, res, ctx) => {
+      return res(ctx.json({ data: [] }));
     }),
     /**
      * Audit Logs

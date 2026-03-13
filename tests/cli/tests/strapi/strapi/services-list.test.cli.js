@@ -13,7 +13,7 @@ describe('services:list', () => {
     appPath = testApps.at(0);
   });
 
-  it('should output list of policies', async () => {
+  it('should output list of services', async () => {
     const { stdout } = await coffee
       .spawn('npm', ['run', '-s', 'strapi', 'services:list'], { cwd: appPath })
       .expect('code', 0)
@@ -157,7 +157,9 @@ describe('services:list', () => {
 ├──────────────────────────────────────────────────────┤
 │ admin::action                                        │
 ├──────────────────────────────────────────────────────┤
-│ admin::api-token                                     │
+│ admin::api-token-content-api                         │
+├──────────────────────────────────────────────────────┤
+│ admin::api-token-admin                               │
 ├──────────────────────────────────────────────────────┤
 │ admin::transfer                                      │
 ├──────────────────────────────────────────────────────┤

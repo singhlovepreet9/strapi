@@ -156,10 +156,7 @@ describe('Admin Token Auth Strategy', () => {
     test('Returns without throwing for a valid token with a future expiry', () => {
       const futureDate = new Date(Date.now() + 60_000).toISOString();
       expect(
-        adminTokenStrategy.verify(
-          { credentials: { id: 2, kind: 'admin', expiresAt: futureDate } },
-          {}
-        )
+        adminTokenStrategy.verify({ credentials: { id: 2, kind: 'admin', expiresAt: futureDate } })
       ).toBeUndefined();
     });
 
@@ -171,16 +168,10 @@ describe('Admin Token Auth Strategy', () => {
     test('Throws UnauthorizedError for an expired token', () => {
       const pastDate = new Date(Date.now() - 1).toISOString();
       expect(() =>
-        adminTokenStrategy.verify(
-          { credentials: { id: 2, kind: 'admin', expiresAt: pastDate } },
-          {}
-        )
+        adminTokenStrategy.verify({ credentials: { id: 2, kind: 'admin', expiresAt: pastDate } })
       ).toThrow(errors.UnauthorizedError);
       expect(() =>
-        adminTokenStrategy.verify(
-          { credentials: { id: 2, kind: 'admin', expiresAt: pastDate } },
-          {}
-        )
+        adminTokenStrategy.verify({ credentials: { id: 2, kind: 'admin', expiresAt: pastDate } })
       ).toThrow('Token expired');
     });
   });

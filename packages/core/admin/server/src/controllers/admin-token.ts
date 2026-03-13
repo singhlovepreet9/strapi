@@ -8,19 +8,16 @@ import {
   validateAdminTokenCreationInput,
   validateAdminTokenUpdateInput,
 } from '../validation/admin-tokens';
-import { validatedUpdatePermissionsInput } from '../validation/permission';
-
 import {
   Create,
   List,
   Revoke,
   Get,
   Update,
-  GetAdminPermissions,
-  UpdateAdminPermissions,
   GetOwnerPermissions,
   AdminApiToken,
 } from '../../../shared/contracts/admin-token';
+import type { ContentApiApiToken } from '../../../shared/contracts/api-token';
 import type { AdminUser } from '../../../shared/contracts/shared';
 
 const { ApplicationError } = errors;
@@ -56,6 +53,13 @@ export default {
   async create(ctx: Context) {
     const { body } = ctx.request as Create.Request;
     const apiTokenService = getService('api-token-admin');
+
+    if ((body as ContentApiApiToken).type !== undefined) {
+      return ctx.badRequest('Type is not allowed for admin tokens');
+    }
+    if ((body as ContentApiApiToken).permissions !== undefined) {
+      return ctx.badRequest('Permissions are not allowed for admin tokens');
+    }
 
     const attributes = {
       kind: 'admin' as const,
@@ -177,74 +181,6 @@ export default {
 
     const apiToken = await apiTokenService.update(id, body);
     ctx.send({ data: apiToken } satisfies Update.Response);
-  },
-
-  // -------------------------------------------------------------------------
-  // Admin permissions — owner or super-admin
-  // -------------------------------------------------------------------------
-  async getAdminPermissions(ctx: Context) {
-    const { id } = ctx.params as GetAdminPermissions.Request['params'];
-    const apiTokenService = getService('api-token-admin');
-    const permissionService = getService('permission');
-
-    const token = await apiTokenService.getById(id);
-    if (!token) {
-      return ctx.notFound('apiToken.notFound');
-    }
-
-    if (!canAccessAdminToken(ctx.state.user, token)) {
-      return ctx.forbidden();
-    }
-
-    const permissions = await permissionService.findMany({
-      where: { apiToken: { id: token.id } },
-    });
-
-    const sanitizedPermissions = permissions.map(permissionService.sanitizePermission);
-
-    // @ts-expect-error - transform response type to sanitized permission
-    ctx.body = { data: sanitizedPermissions } satisfies GetAdminPermissions.Response;
-  },
-
-  async updateAdminPermissions(ctx: Context) {
-    const { id } = ctx.params as UpdateAdminPermissions.Request['params'];
-    const { body: input } = ctx.request as Omit<UpdateAdminPermissions.Request, 'params'>;
-    const apiTokenService = getService('api-token-admin');
-    const permissionService = getService('permission');
-
-    const token = await apiTokenService.getById(id);
-    if (!token) {
-      return ctx.notFound('apiToken.notFound');
-    }
-
-    if (!canAccessAdminToken(ctx.state.user, token)) {
-      return ctx.forbidden();
-    }
-
-    await validatedUpdatePermissionsInput(input);
-
-    // Ceiling is always the token owner's permissions, not the calling user's.
-    const ownerId = getOwnerId(token);
-    const ownerUser = await getService('user').findOne(ownerId);
-    if (ownerUser === null || ownerUser === undefined) {
-      return ctx.notFound('owner.notFound');
-    }
-
-    const permissionsWithDefaults = input.permissions.map((perm: any) => ({
-      ...perm,
-      actionParameters: {},
-    }));
-
-    const permissions = await apiTokenService.assignAdminPermissionsToToken(
-      token.id,
-      permissionsWithDefaults as any,
-      ownerUser
-    );
-
-    const sanitizedPermissions = permissions.map(permissionService.sanitizePermission);
-
-    // @ts-expect-error - transform response type to sanitized permission
-    ctx.body = { data: sanitizedPermissions } satisfies UpdateAdminPermissions.Response;
   },
 
   // -------------------------------------------------------------------------

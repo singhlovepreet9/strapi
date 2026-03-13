@@ -577,32 +577,30 @@ const getBy = async (
   // Tokens created before kind introduction case: force kind to be content-api
   const computedKind = token.kind ?? 'content-api';
 
-  if (!includeDecryptedKey) {
-    return {
-      ...token,
-      ...flattenTokenPermissions(token.permissions),
-      kind: computedKind,
-    };
+  const result = omit(
+    ['accessKey', 'encryptedKey', 'type', 'permissions', 'adminPermissions', 'adminUserOwner'],
+    token
+  );
+
+  if (computedKind === 'content-api') {
+    Object.assign(result, {
+      kind: 'content-api',
+      type: token.type,
+      permissions: flattenTokenPermissions(token.permissions),
+    });
+  } else if (computedKind === 'admin') {
+    Object.assign(result, {
+      kind: 'admin',
+      adminPermissions: token.adminPermissions,
+      adminUserOwner: token.adminUserOwner,
+    });
   }
 
-  const { encryptedKey, ...rest } = token;
-
-  if (!encryptedKey) {
-    return {
-      ...token,
-      ...flattenTokenPermissions(rest.permissions),
-      kind: computedKind,
-    };
+  if (includeDecryptedKey && token.encryptedKey) {
+    Object.assign(result, { accessKey: getService('encryption').decrypt(token.encryptedKey) });
   }
 
-  const accessKey = getService('encryption').decrypt(encryptedKey);
-
-  return {
-    ...token,
-    ...flattenTokenPermissions(rest.permissions),
-    kind: computedKind,
-    accessKey,
-  };
+  return result as AnyApiToken;
 };
 
 /**
@@ -660,7 +658,7 @@ const create = async <K extends AnyApiToken['kind']>(
       castedContentApiApiTokenBody.permissions
     );
 
-    // Legacy tokens have no owner
+    // content api tokens have no owner
     const apiToken = await strapi.db.query('admin::api-token').create({
       select: SELECT_FIELDS,
       populate: POPULATE_FIELDS,
@@ -673,7 +671,7 @@ const create = async <K extends AnyApiToken['kind']>(
       },
     });
 
-    const result = { ...apiToken, accessKey } as AnyApiToken;
+    const result: ContentApiApiToken = { ...apiToken, accessKey };
 
     // If this is a custom type token, create the related content-API permissions
     if (castedContentApiApiTokenBody.type === constants.API_TOKEN_TYPE.CUSTOM) {
@@ -691,12 +689,12 @@ const create = async <K extends AnyApiToken['kind']>(
         .load(apiToken, 'permissions');
 
       if (currentPermissions) {
-        Object.assign(result, { permissions: map('action', currentPermissions) });
+        Object.assign(result, { permissions: flattenTokenPermissions(currentPermissions) });
       }
     }
 
     // Casted to any to avoid complex type duplication
-    return result as any;
+    return omit(['adminPermissions', 'adminUserOwner'], result) as any;
   }
 
   // kind === 'admin'
@@ -752,7 +750,7 @@ const create = async <K extends AnyApiToken['kind']>(
   }
 
   // Casted to any to avoid complex type duplication
-  return result as any;
+  return omit(['permissions'], result) as any;
 };
 
 const regenerate = async (id: string | number): Promise<ContentApiApiToken | AdminApiToken> => {
@@ -835,12 +833,14 @@ const list = async <K extends AnyApiToken['kind']>(
   }
 
   return tokens.map((token) =>
-    token.kind === 'content-api'
-      ? {
+    token.kind === null || token.kind === 'content-api'
+      ? omit(['adminPermissions', 'adminUserOwner'], {
           ...token,
+          // Tokens created before kind introduction case: force kind to be content-api
+          kind: 'content-api',
           permissions: flattenTokenPermissions(token.permissions),
-        }
-      : token
+        })
+      : (omit(['permissions'], token) as any)
   );
 };
 
@@ -930,8 +930,6 @@ const update = async (
         tokenOwnerUser,
         incomingAdminPermissions
       );
-    } else {
-      throw new ValidationError('Invalid API Token kind');
     }
 
     const incomingAdminUserOwner = raw.adminUserOwner;

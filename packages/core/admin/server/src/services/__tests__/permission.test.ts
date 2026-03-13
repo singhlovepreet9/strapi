@@ -86,7 +86,11 @@ describe('Permission Service', () => {
   });
 
   describe('cleanPermissionsInDatabase', () => {
-    const withRole = (p: Record<string, unknown>) => ({ ...p, role: { id: 1 }, apiToken: null });
+    const withRole = <P extends Record<string, unknown>>(p: P) => ({
+      ...p,
+      role: { id: 1 },
+      apiToken: null,
+    });
 
     test('Remove permission that dont exist + clean fields', async () => {
       const permsInDb = [
@@ -141,7 +145,7 @@ describe('Permission Service', () => {
 
       const findMany = jest.fn(() => Promise.resolve(permsInDb));
 
-      const cleanPermissionFields = jest.fn(() => toPermission(permsWithCleanFields));
+      const cleanPermissionFields = jest.fn(() => toPermission(permsWithCleanFields as any));
       const dbDelete = jest.fn(() => Promise.resolve());
       const update = jest.fn(() => Promise.resolve());
       const count = jest.fn(() => Promise.resolve(4));
@@ -221,7 +225,9 @@ describe('Permission Service', () => {
 
       const findMany = jest.fn(() => Promise.resolve(permsInDb));
       const cleanPermissionFields = jest.fn((perms: unknown[]) => perms);
-      const dbDelete = jest.fn(() => Promise.resolve());
+      const dbDelete = jest.fn(({ where }: { where: { id: number } }) =>
+        Promise.resolve({ where: { id: where.id } })
+      );
       const update = jest.fn(() => Promise.resolve());
       const count = jest.fn(() => Promise.resolve(3));
 
@@ -243,7 +249,7 @@ describe('Permission Service', () => {
 
       await cleanPermissionsInDatabase();
 
-      const deletedIds = dbDelete.mock.calls.map((c) => c[0].where.id);
+      const deletedIds = dbDelete.mock.calls.map((c) => (c ? c[0].where.id : undefined));
       expect(deletedIds).toContain(3);
       expect(deletedIds).not.toContain(1);
       expect(deletedIds).not.toContain(2);

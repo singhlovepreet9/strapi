@@ -9,16 +9,16 @@ import { Permissions, PermissionsAPI } from '../../../Roles/components/Permissio
 import type { Permission } from '../../../../../../../../shared/contracts/shared';
 import type { Data } from '@strapi/types';
 
-interface AdminPermissionsProps {
+export interface AdminPermissionsProps {
   disabled?: boolean;
   initialAdminPermissions: Permission[];
   /** Undefined in create mode. */
   tokenId?: string;
-  /** The owner's user id. Undefined in create mode, null when unset. */
+  /** The owner's user id. Undefined in create mode, user can only create a token for themselves. */
   ownerUserId?: Data.ID | null;
 }
 
-const AdminPermissions = React.forwardRef<PermissionsAPI, AdminPermissionsProps>(
+export const AdminPermissions = React.forwardRef<PermissionsAPI, AdminPermissionsProps>(
   ({ disabled, initialAdminPermissions, tokenId, ownerUserId }, ref) => {
     const { permissions: currentUserPermissions, user: currentUser } = useAuth(
       'AdminPermissions',
@@ -42,9 +42,12 @@ const AdminPermissions = React.forwardRef<PermissionsAPI, AdminPermissionsProps>
       return null;
     }
 
-    const effectivePermissions = isCurrentUserOwner
-      ? currentUserPermissions
-      : (ownerPermissions ?? currentUserPermissions);
+    // If the current user is not the owner, but we failed to fetch the owner's permissions, we can't display the permissions form.
+    if (isCurrentUserOwner === false && ownerPermissions === undefined) {
+      return null;
+    }
+
+    const effectivePermissions = isCurrentUserOwner ? currentUserPermissions : ownerPermissions;
 
     return (
       <Permissions
@@ -57,6 +60,3 @@ const AdminPermissions = React.forwardRef<PermissionsAPI, AdminPermissionsProps>
     );
   }
 );
-
-export { AdminPermissions };
-export type { AdminPermissionsProps };

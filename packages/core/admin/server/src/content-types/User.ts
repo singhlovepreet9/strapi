@@ -82,6 +82,7 @@ export default {
     },
     apiTokens: {
       configurable: false,
+      private: true,
       type: 'relation',
       relation: 'oneToMany',
       mappedBy: 'adminUserOwner',

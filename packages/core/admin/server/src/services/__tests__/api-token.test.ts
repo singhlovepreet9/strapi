@@ -109,11 +109,11 @@ describe('API Token', () => {
         },
         populate: ['permissions', 'adminPermissions', 'adminUserOwner'],
       });
+
       expect(res).toEqual({
         ...attributes,
         accessKey: mockedApiToken.hexedString,
         encryptedKey: expect.any(String),
-        adminUserOwner: null,
         expiresAt: null,
         lifespan: null,
       });
@@ -158,7 +158,6 @@ describe('API Token', () => {
         ...attributes,
         accessKey: mockedApiToken.hexedString,
         encryptedKey: expect.any(String),
-        adminUserOwner: null,
         expiresAt: expectedExpires,
         lifespan: attributes.lifespan,
       });
@@ -268,7 +267,7 @@ describe('API Token', () => {
       });
 
       expect(res).toEqual({
-        ...createTokenResult,
+        ...omit('adminUserOwner', createTokenResult),
         accessKey: mockedApiToken.hexedString,
         expiresAt: null,
         lifespan: null,
@@ -343,7 +342,7 @@ describe('API Token', () => {
       });
 
       expect(res).toEqual({
-        ...createTokenResult,
+        ...omit('adminUserOwner', createTokenResult),
         accessKey: mockedApiToken.hexedString,
         expiresAt: null,
         lifespan: null,
@@ -777,7 +776,7 @@ describe('API Token', () => {
         populate: ['permissions', 'adminPermissions', 'adminUserOwner'],
       });
       // getBy normalizes: adds kind (default content-api for legacy tokens when missing from DB)
-      expect(res).toEqual({ ...token, kind: 'content-api' });
+      expect(res).toEqual({ ...token, kind: 'content-api', permissions: [] });
     });
 
     test('It returns `null` if the resource does not exist', async () => {
@@ -1453,7 +1452,7 @@ describe('API Token', () => {
         populate: ['permissions', 'adminPermissions', 'adminUserOwner'],
       });
       // getBy normalizes: adds kind (default content-api for legacy tokens when missing from DB)
-      expect(res).toEqual({ ...token, kind: 'content-api' });
+      expect(res).toEqual({ ...token, kind: 'content-api', permissions: [] });
     });
 
     test('It returns `null` if the resource does not exist', async () => {

@@ -6,23 +6,23 @@ import { isObject } from '../../../../../utils/objects';
  * of an object.
  * This utility is very helpful when dealing with parent<>children checkboxes
  */
-const updateValues = (obj: object, valueToSet: boolean, isFieldUpdate = false): object => {
-  return Object.keys(obj).reduce((acc, current) => {
-    const currentValue = obj[current as keyof object];
-
-    if (current === 'conditions' && !isFieldUpdate) {
-      // @ts-expect-error – TODO: type better
-      acc[current] = currentValue;
+const updateValues = (
+  obj: object,
+  valueToSet: boolean,
+  isFieldUpdate = false
+): Record<string, unknown> => {
+  return Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
+    if (key === 'conditions' && !isFieldUpdate) {
+      acc[key] = value;
 
       return acc;
     }
 
-    if (isObject(currentValue)) {
-      return { ...acc, [current]: updateValues(currentValue, valueToSet, current === 'fields') };
+    if (isObject(value)) {
+      return { ...acc, [key]: updateValues(value, valueToSet, key === 'fields') };
     }
 
-    // @ts-expect-error – TODO: type better
-    acc[current] = valueToSet;
+    acc[key] = valueToSet;
 
     return acc;
   }, {});
@@ -31,7 +31,7 @@ const updateValues = (obj: object, valueToSet: boolean, isFieldUpdate = false): 
 /**
  * Permission-aware version of updateValues.
  * When permissionChecker is undefined (Role editing), behaves like updateValues.
- * When permissionChecker is provided (App Token editing), filters leaf updates based on permissions.
+ * When permissionChecker is provided (Admin Token editing), filters leaf updates based on permissions.
  */
 const updateValuesWithPermissions = (
   obj: object,
@@ -39,38 +39,34 @@ const updateValuesWithPermissions = (
   permissionChecker?: (path: string[]) => boolean,
   currentPath: string[] = [],
   isFieldUpdate = false
-): object => {
+): Record<string, unknown> => {
   if (permissionChecker === undefined) {
     return updateValues(obj, valueToSet, isFieldUpdate);
   }
 
-  return Object.keys(obj).reduce((acc, current) => {
-    const currentValue = obj[current as keyof object];
-    const newPath = [...currentPath, current];
+  return Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
+    const newPath = [...currentPath, key];
 
-    if (current === 'conditions' && !isFieldUpdate) {
-      // @ts-expect-error – TODO: type better
-      acc[current] = currentValue;
+    if (key === 'conditions' && !isFieldUpdate) {
+      acc[key] = value;
       return acc;
     }
 
-    if (isObject(currentValue)) {
+    if (isObject(value)) {
       return {
         ...acc,
-        [current]: updateValuesWithPermissions(
-          currentValue,
+        [key]: updateValuesWithPermissions(
+          value,
           valueToSet,
           permissionChecker,
           newPath,
-          current === 'fields'
+          key === 'fields'
         ),
       };
     }
 
     const hasPermission = permissionChecker(newPath);
-
-    // @ts-expect-error – TODO: type better
-    acc[current] = hasPermission ? valueToSet : currentValue;
+    acc[key] = hasPermission ? valueToSet : value;
 
     return acc;
   }, {});

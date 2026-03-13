@@ -408,7 +408,6 @@ const reducer = (state: State, action: Action) =>
               inheritConditionsAtPath(updatedValues, [], actionId, collectionType, userPermissions);
             }
 
-            // @ts-expect-error – TODO: type better
             if (value === false && updatedValues.conditions !== undefined) {
               // @ts-expect-error – TODO: type better
               const updatedConditions = updateValues(updatedValues.conditions, false);

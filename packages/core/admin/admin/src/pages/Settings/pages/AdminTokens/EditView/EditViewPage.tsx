@@ -73,7 +73,7 @@ export const EditView = () => {
   const isCreating = id === 'create';
   const {
     _unstableFormatAPIError: formatAPIError,
-    _unstableFormatValidationErrors: formatValidtionErrors,
+    _unstableFormatValidationErrors: formatValidationErrors,
   } = useAPIErrorHandler();
 
   const navigate = useNavigate();
@@ -148,7 +148,7 @@ export const EditView = () => {
 
         if ('error' in res) {
           if (isBaseQueryError(res.error) && res.error.name === 'ValidationError') {
-            formik.setErrors(formatValidtionErrors(res.error));
+            formik.setErrors(formatValidationErrors(res.error));
           } else {
             toggleNotification({
               type: 'danger',
@@ -188,7 +188,7 @@ export const EditView = () => {
 
         if ('error' in res) {
           if (isBaseQueryError(res.error) && res.error.name === 'ValidationError') {
-            formik.setErrors(formatValidtionErrors(res.error));
+            formik.setErrors(formatValidationErrors(res.error));
           } else {
             toggleNotification({
               type: 'danger',
@@ -241,9 +241,7 @@ export const EditView = () => {
     apiToken !== null && apiToken.kind === 'admin' ? (apiToken.adminPermissions ?? []) : [];
 
   const ownerUserId =
-    apiToken !== null && apiToken.kind === 'admin'
-      ? getOwnerId(apiToken.adminUserOwner)
-      : undefined;
+    apiToken !== null && apiToken.kind === 'admin' ? getOwnerId(apiToken.adminUserOwner) : null;
 
   if (isLoading) {
     return <Page.Loading />;

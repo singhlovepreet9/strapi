@@ -102,31 +102,35 @@ describe('Admin Token Controller', () => {
       expect(created).toHaveBeenCalled();
     });
 
-    test('Strips content-api fields (type, permissions) from body', async () => {
-      const dirtyBody = {
-        ...createBody,
-        type: 'read-only',
-        permissions: ['api::article.article.find'],
-      };
-      const create = jest.fn().mockResolvedValue(baseAdminToken);
-      const exists = jest.fn(() => false);
-      const created = jest.fn();
-      const ctx = createContext({ body: dirtyBody }, { created, state: { user: ownerUser } });
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { exists, create },
+    test('Throw error on content-api fields: type', async () => {
+      const ctx = createContext(
+        {
+          body: {
+            ...createBody,
+            type: 'read-only',
           },
         },
-      } as any;
+        { state: { user: ownerUser }, badRequest: jest.fn() }
+      );
 
       await adminTokenController.create(ctx as any);
 
-      const calledWith = create.mock.calls[0][0];
-      expect(calledWith).not.toHaveProperty('type');
-      expect(calledWith).not.toHaveProperty('permissions');
-      expect(calledWith.kind).toBe('admin');
+      expect(ctx.badRequest).toHaveBeenCalledWith('Type is not allowed for admin tokens');
+    });
+    test('Throw error on content-api fields: permissions', async () => {
+      const ctx = createContext(
+        {
+          body: {
+            ...createBody,
+            permissions: ['api::article.article.find'],
+          },
+        },
+        { state: { user: ownerUser }, badRequest: jest.fn() }
+      );
+
+      await adminTokenController.create(ctx as any);
+
+      expect(ctx.badRequest).toHaveBeenCalledWith('Permissions are not allowed for admin tokens');
     });
   });
 
@@ -500,246 +504,6 @@ describe('Admin Token Controller', () => {
         expect(e instanceof errors.ApplicationError).toBe(true);
         expect(e.message).toEqual('Name already taken');
       }
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // getAdminPermissions — owner or super-admin
-  // ---------------------------------------------------------------------------
-  describe('getAdminPermissions', () => {
-    test('Returns 404 when token not found', async () => {
-      const getById = jest.fn().mockResolvedValue(null);
-      const notFound = jest.fn();
-      const ctx = createContext(
-        { params: { id: baseAdminToken.id } },
-        { notFound, state: { user: superAdmin } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById },
-          },
-        },
-      } as any;
-
-      await adminTokenController.getAdminPermissions(ctx as any);
-
-      expect(notFound).toHaveBeenCalledWith('apiToken.notFound');
-    });
-
-    test('Returns 403 when caller is not owner and not super-admin', async () => {
-      const otherUser = { id: 77, roles: [{ code: 'strapi-editor' }] };
-      const getById = jest.fn().mockResolvedValue(baseAdminToken);
-      const forbidden = jest.fn();
-      const ctx = createContext(
-        { params: { id: baseAdminToken.id } },
-        { forbidden, state: { user: otherUser } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById },
-          },
-        },
-      } as any;
-
-      await adminTokenController.getAdminPermissions(ctx as any);
-
-      expect(forbidden).toHaveBeenCalled();
-    });
-
-    test('Returns permissions for owner', async () => {
-      const tokenPermissions = [{ action: 'plugin::content-manager.explorer.read', subject: null }];
-      const sanitizePermission = jest.fn((p) => p);
-      const findMany = jest.fn().mockResolvedValue(tokenPermissions);
-      const getById = jest.fn().mockResolvedValue(baseAdminToken);
-      const ctx = createContext(
-        { params: { id: baseAdminToken.id } },
-        { state: { user: ownerUser } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById },
-            permission: { findMany, sanitizePermission },
-          },
-        },
-      } as any;
-
-      await adminTokenController.getAdminPermissions(ctx as any);
-
-      expect(findMany).toHaveBeenCalledWith({
-        where: { apiToken: { id: baseAdminToken.id } },
-      });
-      expect((ctx as any).body).toEqual({ data: tokenPermissions });
-    });
-
-    test('Returns permissions for super-admin', async () => {
-      const tokenPermissions = [{ action: 'plugin::content-manager.explorer.read', subject: null }];
-      const sanitizePermission = jest.fn((p) => p);
-      const findMany = jest.fn().mockResolvedValue(tokenPermissions);
-      const getById = jest.fn().mockResolvedValue(baseAdminToken);
-      const ctx = createContext(
-        { params: { id: baseAdminToken.id } },
-        { state: { user: superAdmin } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById },
-            permission: { findMany, sanitizePermission },
-          },
-        },
-      } as any;
-
-      await adminTokenController.getAdminPermissions(ctx as any);
-
-      expect(findMany).toHaveBeenCalledWith({
-        where: { apiToken: { id: baseAdminToken.id } },
-      });
-      expect((ctx as any).body).toEqual({ data: tokenPermissions });
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // updateAdminPermissions — owner or super-admin (ceiling = owner)
-  // ---------------------------------------------------------------------------
-  describe('updateAdminPermissions', () => {
-    test('Returns 404 when token not found', async () => {
-      const getById = jest.fn().mockResolvedValue(null);
-      const notFound = jest.fn();
-      const ctx = createContext(
-        { params: { id: baseAdminToken.id }, body: { permissions: [] } },
-        { notFound, state: { user: superAdmin } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById },
-          },
-        },
-      } as any;
-
-      await adminTokenController.updateAdminPermissions(ctx as any);
-
-      expect(notFound).toHaveBeenCalledWith('apiToken.notFound');
-    });
-
-    test('Returns 403 when caller is not owner and not super-admin', async () => {
-      const otherUser = { id: 77, roles: [{ code: 'strapi-editor' }] };
-      const getById = jest.fn().mockResolvedValue(baseAdminToken);
-      const forbidden = jest.fn();
-      const ctx = createContext(
-        { params: { id: baseAdminToken.id }, body: { permissions: [] } },
-        { forbidden, state: { user: otherUser } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById },
-          },
-        },
-      } as any;
-
-      await adminTokenController.updateAdminPermissions(ctx as any);
-
-      expect(forbidden).toHaveBeenCalled();
-    });
-
-    test('Returns 404 when owner user no longer exists', async () => {
-      const getById = jest.fn().mockResolvedValue(baseAdminToken);
-      const findOne = jest.fn().mockResolvedValue(null);
-      const notFound = jest.fn();
-      const ctx = createContext(
-        { params: { id: baseAdminToken.id }, body: { permissions: [] } },
-        { notFound, state: { user: superAdmin } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById },
-            user: { findOne },
-          },
-        },
-      } as any;
-
-      await adminTokenController.updateAdminPermissions(ctx as any);
-
-      expect(findOne).toHaveBeenCalledWith(String(ownerUser.id));
-      expect(notFound).toHaveBeenCalledWith('owner.notFound');
-    });
-
-    test('Super-admin update uses owner as ceiling user, not the super-admin', async () => {
-      const sanitizePermission = jest.fn((p) => p);
-      const assignAdminPermissionsToToken = jest.fn().mockResolvedValue([]);
-      const findOne = jest.fn().mockResolvedValue(ownerUser);
-      const getById = jest.fn().mockResolvedValue(baseAdminToken);
-      const ctx = createContext(
-        {
-          params: { id: baseAdminToken.id },
-          body: { permissions: [{ action: 'some.action', subject: null }] },
-        },
-        { state: { user: superAdmin } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById, assignAdminPermissionsToToken },
-            user: { findOne },
-            permission: {
-              sanitizePermission,
-              actionProvider: { get: jest.fn().mockReturnValue({ actionId: 'some.action' }) },
-            },
-          },
-        },
-      } as any;
-
-      await adminTokenController.updateAdminPermissions(ctx as any);
-
-      expect(findOne).toHaveBeenCalledWith(String(ownerUser.id));
-      expect(assignAdminPermissionsToToken).toHaveBeenCalledWith(
-        baseAdminToken.id,
-        expect.any(Array),
-        ownerUser
-      );
-    });
-
-    test('Owner update uses owner as ceiling user', async () => {
-      const sanitizePermission = jest.fn((p) => p);
-      const assignAdminPermissionsToToken = jest.fn().mockResolvedValue([]);
-      const findOne = jest.fn().mockResolvedValue(ownerUser);
-      const getById = jest.fn().mockResolvedValue(baseAdminToken);
-      const ctx = createContext(
-        { params: { id: baseAdminToken.id }, body: { permissions: [] } },
-        { state: { user: ownerUser } }
-      );
-
-      global.strapi = {
-        admin: {
-          services: {
-            'api-token-admin': { getById, assignAdminPermissionsToToken },
-            user: { findOne },
-            permission: { sanitizePermission },
-          },
-        },
-      } as any;
-
-      await adminTokenController.updateAdminPermissions(ctx as any);
-
-      expect(findOne).toHaveBeenCalledWith(String(ownerUser.id));
-      expect(assignAdminPermissionsToToken).toHaveBeenCalledWith(
-        baseAdminToken.id,
-        expect.any(Array),
-        ownerUser
-      );
     });
   });
 

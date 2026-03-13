@@ -45,7 +45,6 @@ interface TableProps
   };
   tokens: SanitizedTransferToken[] | ApiToken[];
   tokenType: 'api-token' | 'transfer-token';
-  showKind?: boolean;
   showOwner?: boolean;
 }
 
@@ -56,7 +55,6 @@ const Table = ({
   tokens = [],
   onConfirmDelete,
   tokenType,
-  showKind = false,
   showOwner = false,
 }: TableProps) => {
   const [{ query }] = useQueryParams<{ sort?: string }>();
@@ -104,25 +102,6 @@ const Table = ({
                     {token.name}
                   </Typography>
                 </TableImpl.Cell>
-                {showKind === true &&
-                  (() => {
-                    const apiToken = token as ApiToken;
-                    return (
-                      <TableImpl.Cell>
-                        <Typography textColor="neutral800">
-                          {apiToken.kind === 'admin'
-                            ? formatMessage({
-                                id: 'Settings.apiTokens.kind.admin',
-                                defaultMessage: 'Admin',
-                              })
-                            : formatMessage({
-                                id: 'Settings.apiTokens.kind.content-api',
-                                defaultMessage: 'Content API',
-                              })}
-                        </Typography>
-                      </TableImpl.Cell>
-                    );
-                  })()}
                 <TableImpl.Cell maxWidth="25rem">
                   <Typography textColor="neutral800" ellipsis>
                     {token.description}

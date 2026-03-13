@@ -163,8 +163,8 @@ export const ListView = () => {
               to="/settings/admin-tokens/create"
             >
               {formatMessage({
-                id: 'Settings.adminTokens.addNewToken',
-                defaultMessage: 'Add new Admin Token',
+                id: 'Settings.adminTokens.create',
+                defaultMessage: 'Create new API Token',
               })}
             </LinkButton>
           )

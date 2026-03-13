@@ -67,28 +67,6 @@ export default [
   },
   {
     method: 'GET',
-    path: '/admin-tokens/:id/admin-permissions',
-    handler: 'admin-token.getAdminPermissions',
-    config: {
-      policies: [
-        'admin::isAuthenticatedAdmin',
-        { name: 'admin::hasPermissions', config: { actions: ['admin::admin-tokens.read'] } },
-      ],
-    },
-  },
-  {
-    method: 'PUT',
-    path: '/admin-tokens/:id/admin-permissions',
-    handler: 'admin-token.updateAdminPermissions',
-    config: {
-      policies: [
-        'admin::isAuthenticatedAdmin',
-        { name: 'admin::hasPermissions', config: { actions: ['admin::admin-tokens.update'] } },
-      ],
-    },
-  },
-  {
-    method: 'GET',
     path: '/admin-tokens/:id/owner-permissions',
     handler: 'admin-token.getOwnerPermissions',
     config: {

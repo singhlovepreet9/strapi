@@ -124,40 +124,6 @@ export declare namespace Regenerate {
 }
 
 /**
- * GET /admin-tokens/:id/admin-permissions - Get admin permissions of a token
- */
-export declare namespace GetAdminPermissions {
-  export interface Request {
-    params: { id: Data.ID };
-    query: {};
-    body: {};
-  }
-
-  export interface Response {
-    data: Permission[];
-    error?: errors.ApplicationError | errors.NotFoundError;
-  }
-}
-
-/**
- * PUT /admin-tokens/:id/admin-permissions - Update admin permissions of a token
- */
-export declare namespace UpdateAdminPermissions {
-  export interface Request {
-    params: { id: Data.ID };
-    query: {};
-    body: {
-      permissions: Omit<Permission, 'id' | 'createdAt' | 'updatedAt' | 'actionParameters'>[];
-    };
-  }
-
-  export interface Response {
-    data: Permission[];
-    error?: errors.ApplicationError | errors.NotFoundError | errors.YupValidationError;
-  }
-}
-
-/**
  * GET /admin-tokens/:id/owner-permissions - Get the effective permissions of the token owner
  */
 export declare namespace GetOwnerPermissions {

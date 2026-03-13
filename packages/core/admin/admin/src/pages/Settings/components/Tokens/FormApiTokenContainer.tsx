@@ -12,18 +12,23 @@ import { TokenName } from './TokenName';
 import { TokenTypeSelect } from './TokenTypeSelect';
 
 import type { AdminApiToken } from '../../../../../../shared/contracts/admin-token';
-import type { ContentApiApiToken } from '../../../../../../shared/contracts/api-token';
+import type { ApiToken, ContentApiApiToken } from '../../../../../../shared/contracts/api-token';
 import type { AdminUser } from '../../../../../../shared/contracts/shared';
 import type { AuthContextValue } from '../../../../features/Auth';
+
 interface FormApiTokenContainerProps {
   errors?: FormikErrors<Pick<ContentApiApiToken, 'name' | 'description' | 'lifespan' | 'type'>>;
   onChange: ({ target: { name, value } }: { target: { name: string; value: string } }) => void;
   canEditInputs: boolean;
   values?: Partial<Pick<ContentApiApiToken, 'name' | 'description' | 'lifespan' | 'type'>>;
   isCreating: boolean;
-  apiToken?: null | Partial<ContentApiApiToken> | Partial<AdminApiToken>;
+  apiToken?: null | Partial<ApiToken>;
   kind: 'admin' | 'content-api';
-  onDispatch: React.Dispatch<any>;
+  onDispatch: React.Dispatch<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type: any;
+    value?: unknown;
+  }>;
   setHasChangedPermissions: (hasChanged: boolean) => void;
 }
 
@@ -150,11 +155,9 @@ export const FormApiTokenContainer = ({
                   defaultMessage: 'Token type',
                 }}
                 onChange={(value) => {
-                  // @ts-expect-error – DS Select supports numbers & strings, will be removed in V2
-                  handleChangeSelectApiTokenType({ target: { value } });
+                  handleChangeSelectApiTokenType({ target: { value: String(value) } });
 
-                  // @ts-expect-error – DS Select supports numbers & strings, will be removed in V2
-                  onChange({ target: { name: 'type', value } });
+                  onChange({ target: { name: 'type', value: String(value) } });
                 }}
                 options={typeOptions}
                 canEditInputs={canEditInputs}
@@ -166,7 +169,7 @@ export const FormApiTokenContainer = ({
               <Field.Root name="adminUserOwner">
                 <Field.Label>
                   {formatMessage({
-                    id: 'Settings.apiTokens.form.owner',
+                    id: 'Settings.tokens.form.owner',
                     defaultMessage: 'Owner',
                   })}
                 </Field.Label>

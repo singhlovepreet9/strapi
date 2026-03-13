@@ -64,7 +64,7 @@ export const EditView = () => {
   const isCreating = id === 'create';
   const {
     _unstableFormatAPIError: formatAPIError,
-    _unstableFormatValidationErrors: formatValidtionErrors,
+    _unstableFormatValidationErrors: formatValidationErrors,
   } = useAPIErrorHandler();
 
   const navigate = useNavigate();
@@ -112,7 +112,7 @@ export const EditView = () => {
   }, [contentAPIRoutesQuery.data]);
 
   React.useEffect(() => {
-    if (apiToken !== null && apiToken.kind === 'content-api') {
+    if (apiToken !== null) {
       if (apiToken.type === 'read-only') {
         dispatch({ type: 'ON_CHANGE_READ_ONLY' });
       }
@@ -207,7 +207,7 @@ export const EditView = () => {
 
         if ('error' in res) {
           if (isBaseQueryError(res.error) && res.error.name === 'ValidationError') {
-            formik.setErrors(formatValidtionErrors(res.error));
+            formik.setErrors(formatValidationErrors(res.error));
           } else {
             toggleNotification({
               type: 'danger',
@@ -246,7 +246,7 @@ export const EditView = () => {
 
         if ('error' in res) {
           if (isBaseQueryError(res.error) && res.error.name === 'ValidationError') {
-            formik.setErrors(formatValidtionErrors(res.error));
+            formik.setErrors(formatValidationErrors(res.error));
           } else {
             toggleNotification({
               type: 'danger',
@@ -370,8 +370,8 @@ export const EditView = () => {
                   title={
                     isCreating
                       ? {
-                          id: 'Settings.apiTokens.createPage.title.contentApi',
-                          defaultMessage: 'Create Content API Token',
+                          id: 'Settings.apiTokens.createPage.title',
+                          defaultMessage: 'Create API Token',
                         }
                       : {
                           id: 'Settings.apiTokens.createPage.title',
