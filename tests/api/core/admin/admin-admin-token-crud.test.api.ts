@@ -11,6 +11,8 @@ describe('Admin Admin Token CRUD (api)', () => {
   let rqOther: Awaited<ReturnType<typeof createAuthRequest>>;
   let rqEditor: Awaited<ReturnType<typeof createAuthRequest>>;
   let editorUserId: number;
+  let saOtherUserId: number;
+  let editorRoleId: number;
   let now: number;
   let nowSpy: jest.SpyInstance;
 
@@ -34,13 +36,14 @@ describe('Admin Admin Token CRUD (api)', () => {
     const utils = createUtils(strapi);
 
     const superAdminRole = await utils.getSuperAdminRole();
-    await utils.createUser({
+    const saOtherUser = await utils.createUser({
       email: 'sa-other@test.com',
       firstname: 'Other',
       lastname: 'SA',
       isActive: true,
       roles: [superAdminRole.id],
     });
+    saOtherUserId = saOtherUser.id;
     rqOther = await createAuthRequest({ strapi, userInfo: { email: 'sa-other@test.com' } });
 
     // Create a custom role with one known action for ceiling tests.
@@ -48,6 +51,7 @@ describe('Admin Admin Token CRUD (api)', () => {
       name: 'token-ceiling-test-role',
       description: 'Role used to test admin token permission ceiling',
     });
+    editorRoleId = editorRole.id;
     await utils.assignPermissionsToRole(editorRole.id, [
       { action: EDITOR_ACTION, subject: null, conditions: [], properties: {} },
       { action: 'admin::admin-tokens.create', subject: null, conditions: [], properties: {} },
@@ -72,6 +76,12 @@ describe('Admin Admin Token CRUD (api)', () => {
 
   afterAll(async () => {
     nowSpy.mockRestore();
+    if (editorUserId !== undefined)
+      await strapi.db.query('admin::user').delete({ where: { id: editorUserId } });
+    if (saOtherUserId !== undefined)
+      await strapi.db.query('admin::user').delete({ where: { id: saOtherUserId } });
+    if (editorRoleId !== undefined)
+      await strapi.db.query('admin::role').delete({ where: { id: editorRoleId } });
     await strapi.destroy();
   });
 
