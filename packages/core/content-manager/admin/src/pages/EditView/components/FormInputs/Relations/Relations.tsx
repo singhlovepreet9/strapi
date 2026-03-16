@@ -558,14 +558,13 @@ const RelationsInput = ({
 
   const hasNextPage = data?.pagination ? data.pagination.page < data.pagination.pageCount : false;
 
-  const options = data?.results ?? [];
-
   const handleChange = React.useCallback(
     (relationId?: string) => {
       if (!relationId) {
         return;
       }
 
+      const options = data?.results ?? [];
       const relation = options.find((opt) => opt.id.toString() === relationId);
 
       if (!relation) {
@@ -594,7 +593,7 @@ const RelationsInput = ({
        */
       onChange(relation);
     },
-    [formatMessage, onChange, options, toggleNotification]
+    [data, formatMessage, onChange, toggleNotification]
   );
 
   const relation = React.useMemo(
@@ -871,6 +870,11 @@ const RelationsList = ({
     };
   }, [isLoading, data.length]);
 
+  const getItemPos = React.useCallback(
+    (index: number) => `${index + 1} of ${data.length}`,
+    [data.length]
+  );
+
   const handleMoveItem = React.useCallback<NonNullable<UseDragAndDropOptions['onMoveItem']>>(
     (newIndex, oldIndex) => {
       const item = data[oldIndex];
@@ -883,7 +887,7 @@ const RelationsList = ({
           },
           {
             item: item.label ?? item.documentId,
-            position: `${newIndex + 1} of ${data.length}`,
+            position: getItemPos(newIndex),
           }
         )
       );
@@ -953,7 +957,7 @@ const RelationsList = ({
 
       field.onChange(`${name}.connect`, connectedRelations);
     },
-    [data, field, formatMessage, name, serverData]
+    [data, serverData, field, name, formatMessage, getItemPos]
   );
 
   const handleGrabItem = React.useCallback<NonNullable<UseDragAndDropOptions['onGrabItem']>>(
@@ -968,12 +972,12 @@ const RelationsList = ({
           },
           {
             item: item.label ?? item.documentId,
-            position: `${index + 1} of ${data.length}`,
+            position: getItemPos(index),
           }
         )
       );
     },
-    [data, formatMessage]
+    [data, formatMessage, getItemPos]
   );
 
   const handleDropItem = React.useCallback<NonNullable<UseDragAndDropOptions['onDropItem']>>(
@@ -988,12 +992,12 @@ const RelationsList = ({
           },
           {
             item: label ?? item.documentId,
-            position: `${index + 1} of ${data.length}`,
+            position: getItemPos(index),
           }
         )
       );
     },
-    [data, formatMessage]
+    [data, formatMessage, getItemPos]
   );
 
   const handleCancel = React.useCallback<NonNullable<UseDragAndDropOptions['onCancel']>>(
@@ -1158,7 +1162,7 @@ const RelationRow = styled<FlexComponent>(Flex)`
   }
 `;
 
-const ListItem = ({ data, index, style }: ListItemProps) => {
+const ListItem = React.memo(({ data, index, style }: ListItemProps) => {
   const {
     ariaDescribedBy,
     canDrag = false,
@@ -1235,14 +1239,18 @@ const ListItem = ({ data, index, style }: ListItemProps) => {
 
   const safeDocumentId = documentId ?? apiData?.documentId;
   const safeLocale = locale ?? apiData?.locale ?? null;
-  const documentMeta = {
-    documentId: safeDocumentId,
-    model: targetModel,
-    collectionType: getCollectionType(href)!,
-    params: {
-      locale: safeLocale,
-    },
-  } as DocumentMeta;
+  const documentMeta = React.useMemo(
+    () =>
+      ({
+        documentId: safeDocumentId,
+        model: targetModel,
+        collectionType: getCollectionType(href)!,
+        params: {
+          locale: safeLocale,
+        },
+      }) as DocumentMeta,
+    [safeDocumentId, href, safeLocale, targetModel]
+  );
 
   return (
     <Box
@@ -1310,7 +1318,7 @@ const ListItem = ({ data, index, style }: ListItemProps) => {
       )}
     </Box>
   );
-};
+});
 
 const FlexWrapper = styled<FlexComponent>(Flex)`
   width: 100%;
