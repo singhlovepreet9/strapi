@@ -258,10 +258,9 @@ const documentApi = contentManagerApi.injectEndpoints({
     }),
     /**
      * Fetches multiple documents with full populate via the existing find API.
-     * Uses filters[documentId][$in] and _populate=deep for validation.
      */
     getDocumentsForValidation: builder.query<
-      FindOne.Response['data'][],
+      Find.Response['results'],
       {
         collectionType: string;
         model: string;
@@ -270,20 +269,20 @@ const documentApi = contentManagerApi.injectEndpoints({
       }
     >({
       query: ({ collectionType, model, documentIds, params }) => {
-        const filters = documentIds.length > 0 ? { documentId: { $in: documentIds } } : undefined;
+        const filters = { documentId: { $in: documentIds } };
         const queryParams = {
           ...params,
           filters,
           status: 'draft',
-          _populate: 'deep',
           page: 1,
-          pageSize: Math.max(documentIds.length, 1),
+          pageSize: Math.min(Math.max(documentIds.length, 1), 1000),
         };
         return {
           url: `/content-manager/${collectionType}/${model}`,
           method: 'GET',
           config: {
             params: stringify(queryParams, { encode: true }),
+            headers: { 'x-strapi-populate': 'deep' },
           },
         };
       },
